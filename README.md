@@ -23,13 +23,16 @@
 
 ## 🛠️ Hardware Requirements (รายการอุปกรณ์)
 
-1. บอร์ดไมโครคอนโทรลเลอร์ **ESP32** (NodeMCU)
-2. เซนเซอร์วัดอุณหภูมิและความชื้น **DHT11**
-3. เซนเซอร์วัดความชื้นในดิน (**Soil Moisture Sensor**)
-4. เซนเซอร์วัดแสงสว่าง **LDR** (Photoresistor)
-5. เซนเซอร์ตรวจจับแก๊สและควัน **MQ-2**
-6. โมดูลเสียงเตือน **Buzzer** (Active/Passive)
-7. สาย Jumper และ Breadboard
+*   **บอร์ด ESP32 + สาย USB เชื่อมต่อคอม:** ไมโครคอนโทรลเลอร์หลักประมวลผลและส่งข้อมูล[span_1](start_span)[span_1](end_span)
+*   **Breadboard:** แผงต่อวงจรต้นแบบ[span_2](start_span)[span_2](end_span)
+*   **สายไฟ Jumper:** สำหรับเชื่อมต่ออุปกรณ์ต่างๆ[span_3](start_span)[span_3](end_span)
+*   **จอ OLED 0.96" (I2C):** แสดงผลที่ตัวเครื่อง (มี 4 ขา: VCC, GND, SCL, SDA)[span_4](start_span)[span_4](end_span)
+*   **เซนเซอร์ตรวจจับมือ (Ultrasonic HC-SR04):** ตรวจจับระยะห่างหรือการเคลื่อนไหว[span_5](start_span)[span_5](end_span)
+*   **DHT11 Sensor:** ตรวจวัดอุณหภูมิ/ความชื้น (ใช้งานจริงแทน DHT22 ในแผนงาน)[span_6](start_span)[span_6](end_span)
+*   **Resistive Soil Moisture Sensor + บอร์ด HD-38:** ตรวจวัดความชื้นดิน[span_7](start_span)[span_7](end_span)
+*   **Raindrop Sensor:** ตรวจจับน้ำฝน[span_8](start_span)[span_8](end_span)
+*   **LDR Module:** ตรวจวัดแสง[span_9](start_span)[span_9](end_span)
+*   **MQ-2 (ตรวจควัน/แก๊ส) + Active Buzzer:** ระบบตรวจจับความปลอดภัยและส่งเสียงเตือน[span_10](start_span)[span_10](end_span)
 
 ---
 
