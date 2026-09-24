@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Tree Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#FF5722', // Modern Orange
+                        surface: '#FFFFFF',
+                        background: '#F3F4F6',
+                        darkSurface: '#1E1E24',
+                        darkBackground: '#121214',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #F3F4F6;
+            transition: background-color 0.3s ease;
+        }
+        body.dark {
+            background-color: #121214;
+            color: #E5E7EB;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+        }
+        .dark .card {
+            background-color: #1E1E24;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        
+        .status-badge {
+            transition: all 0.3s ease;
+        }
+        .status-safe { background-color: #D1FAE5; color: #065F46; }
+        .status-warning { background-color: #FEF3C7; color: #92400E; }
+        .status-danger { background-color: #FEE2E2; color: #991B1B; animation: pulse 2s infinite; }
+        
+        .dark .status-safe { background-color: rgba(16, 185, 129, 0.2); color: #34D399; }
+        .dark .status-warning { background-color: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+        .dark .status-danger { background-color: rgba(239, 68, 68, 0.2); color: #F87171; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .gradient-orange {
+            background: linear-gradient(135deg, #FF7A59 0%, #FF5722 100%);
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-20 md:w-64 bg-white dark:bg-darkSurface h-full border-r border-gray-100 dark:border-gray-800 flex flex-col justify-between py-6 transition-all duration-300 z-20 hidden sm:flex">
+        <div>
+            <div class="flex items-center justify-center md:justify-start px-6 mb-10">
+                <div class="w-8 h-8 rounded-lg gradient-orange flex items-center justify-center text-white font-bold text-xl mr-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 11a9 9 0 019 9M4 5a15 15 0 0115 15m-15 0h.01"></path></svg>
+                </div>
+                <span class="font-bold text-xl hidden md:block dark:text-white">SmartIoT</span>
+            </div>
+            
+            <nav class="space-y-2 px-3">
+                <a href="#" class="flex items-center px-3 py-3 md:px-4 md:py-3 bg-gray-900 dark:bg-gray-800 text-white rounded-xl group transition-colors">
+                    <svg class="w-6 h-6 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    <span class="hidden md:block font-medium">Dashboard</span>
+                </a>
+            </nav>
+        </div>
+        
+        <div class="px-3">
+             <button id="themeToggleBtn" class="w-full flex justify-center md:justify-start items-center px-3 py-3 md:px-4 md:py-3 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-colors">
+                <svg id="moonIcon" class="w-6 h-6 md:mr-3 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg id="sunIcon" class="w-6 h-6 md:mr-3 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <span class="hidden md:block font-medium">Theme</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <!-- Header -->
+        <header class="h-20 px-8 flex items-center justify-between bg-transparent z-10 pt-4">
+            <div>
+                <h1 class="text-2xl font-bold dark:text-white" id="greeting">Good morning</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Monitor your Smart Tree status in real-time.</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                 <button class="w-10 h-10 bg-white dark:bg-darkSurface rounded-full flex items-center justify-center shadow-sm text-gray-500 hover:text-primary transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
+                <button class="w-10 h-10 bg-white dark:bg-darkSurface rounded-full flex items-center justify-center shadow-sm text-gray-500 hover:text-primary transition-colors relative">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 pt-4">
+            <div class="max-w-7xl mx-auto space-y-6">
+                
+                <!-- Top Row: Main Status & Quick Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <!-- System Status Card -->
+                    <div class="card p-6 col-span-1 md:col-span-2 flex flex-col justify-between relative overflow-hidden">
+                        <div class="absolute -right-10 -top-10 w-40 h-40 bg-gray-50 dark:bg-gray-800 rounded-full opacity-50"></div>
+                        
+                        <div class="flex justify-between items-start relative z-10">
+                            <div>
+                                <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-300">System Security Status</h2>
+                                <p class="text-sm text-gray-500 mt-1">Overall health based on sensor data</p>
+                            </div>
+                            <span id="ui-status-badge" class="px-4 py-1.5 rounded-full text-sm font-bold status-safe uppercase tracking-wider shadow-sm">
+                                Connecting...
+                            </span>
+                        </div>
+                        
+                        <div class="mt-8 flex items-end justify-between relative z-10">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Current Gas Level</p>
+                                <div class="flex items-baseline">
+                                    <span id="ui-gas" class="text-4xl md:text-5xl font-bold dark:text-white">--</span>
+                                    <span class="ml-2 text-gray-500 font-medium">ppm</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-400 mb-1">Thresholds</p>
+                                <p class="text-sm font-medium text-amber-500">Warn: > 800</p>
+                                <p class="text-sm font-medium text-red-500">Danger: > 1500</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Environment Mini Cards -->
+                    <div class="col-span-1 flex flex-col gap-4">
+                        <div class="card p-5 gradient-orange text-white flex items-center justify-between">
+                            <div>
+                                <p class="text-white/80 text-sm font-medium mb-1">Temperature</p>
+                                <div class="flex items-baseline">
+                                    <span id="ui-temp" class="text-3xl font-bold">--</span>
+                                    <span class="text-lg ml-1">°C</span>
+                                </div>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            </div>
+                        </div>
+                        
+                        <div class="card p-5 bg-white dark:bg-darkSurface flex items-center justify-between border border-transparent dark:border-gray-800">
+                            <div>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Air Humidity</p>
+                                <div class="flex items-baseline">
+                                    <span id="ui-hum" class="text-2xl font-bold dark:text-white">--</span>
+                                    <span class="text-gray-500 ml-1">%</span>
+                                </div>
+                            </div>
+                            <div class="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Row: Soil/Rain & Weather widget -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Watering Schedule -->
+                    <div class="card p-6 col-span-1 lg:col-span-2">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-lg font-semibold dark:text-white">ตารางงาน</h3>
+                                <p class="text-sm text-gray-500">จัดการเวลาและสถานะของงาน</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="text-right">
+                                    <span id="ui-soil" class="text-2xl font-bold text-primary">--</span>
+                                    <span class="text-gray-500 text-sm font-medium">% ความชื้น</span>
+                                </div>
+                                <button id="add-schedule" type="button" class="gradient-orange text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity">+ เพิ่มงาน</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-gray-500 border-b border-gray-100 dark:border-gray-800">
+                                        <th class="pb-3 font-medium">เวลา</th>
+                                        <th class="pb-3 font-medium">งาน</th>
+                                        <th class="pb-3 font-medium">โซน</th>
+                                        <th class="pb-3 font-medium">สถานะ</th>
+                                        <th class="pb-3 text-right font-medium">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schedule-list"></tbody>
+                            </table>
+                            <p id="schedule-empty" class="hidden text-center text-gray-400 py-8">ยังไม่มีงานในตาราง กด “+ เพิ่มงาน” เพื่อเริ่มต้น</p>
+                        </div>
+                    </div>
+
+                    <!-- Weather Info Widget -->
+                    <div class="card p-6 col-span-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold dark:text-white mb-4">Local Environment</h3>
+                            
+                            <div class="space-y-4">
+                                <!-- Day/Night Indicator -->
+                                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                    <div class="flex items-center">
+                                        <div id="icon-daytime" class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mr-3">
+                                            ☀️
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium dark:text-white">Time of Day</p>
+                                            <p class="text-xs text-gray-500">LDR Sensor</p>
+                                        </div>
+                                    </div>
+                                    <span id="ui-daytime" class="font-bold dark:text-white">--</span>
+                                </div>
+                                
+                                <!-- Rain Indicator -->
+                                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                    <div class="flex items-center">
+                                        <div id="icon-rain" class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3">
+                                            🌤️
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium dark:text-white">Precipitation</p>
+                                            <p class="text-xs text-gray-500">Rain Sensor</p>
+                                        </div>
+                                    </div>
+                                    <span id="ui-rain" class="font-bold dark:text-white">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Chiang Mai Weather (Static Data from Search) -->
+                        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                            <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Chiang Mai Forecast (Today)</p>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="text-2xl font-bold dark:text-white">32°C</span>
+                                    <span class="text-sm text-gray-500 ml-2">High</span>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-blue-500">60% Rain Chance</p>
+                                    <p class="text-xs text-gray-500">Thunderstorms likely</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Recent Activity Log -->
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold dark:text-white">Recent Sensor Updates</h3>
+                        <div class="flex items-center text-sm text-gray-500">
+                            <span class="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                            Live Connection
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-gray-400 text-sm border-b border-gray-100 dark:border-gray-800">
+                                    <th class="pb-3 font-medium">Timestamp</th>
+                                    <th class="pb-3 font-medium">Temp / Hum</th>
+                                    <th class="pb-3 font-medium">Soil Moist.</th>
+                                    <th class="pb-3 font-medium">Gas Level</th>
+                                    <th class="pb-3 font-medium text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activity-log" class="text-sm">
+                                <!-- Log entries will be prepended here by JS -->
+                                <tr id="log-placeholder">
+                                    <td colspan="5" class="py-4 text-center text-gray-500 italic">Waiting for initial data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // ==========================================
+        // 1. Firebase Configuration
+        // ==========================================
+        // IMPORTANT: Replace these with the actual values from your Firebase console
+        const firebaseConfig = {
+            apiKey: "AIzaSyDL18PTn1fvuHrSNCQ-9RmIIaO6jJU1Tr8", // The key you provided earlier
+            databaseURL: "https://smarttree-iot-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "smarttree-iot",
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const dataRef = ref(db, 'SmartTree/CurrentData');
+
+        // ==========================================
+        // 2. UI Elements & Chart Setup
+        // ==========================================
+        const els = {
+            temp: document.getElementById('ui-temp'),
+            hum: document.getElementById('ui-hum'),
+            soil: document.getElementById('ui-soil'),
+            gas: document.getElementById('ui-gas'),
+            daytime: document.getElementById('ui-daytime'),
+            rain: document.getElementById('ui-rain'),
+            statusBadge: document.getElementById('ui-status-badge'),
+            iconDaytime: document.getElementById('icon-daytime'),
+            iconRain: document.getElementById('icon-rain'),
+            log: document.getElementById('activity-log'),
+            placeholder: document.getElementById('log-placeholder')
+        };
+
+        // Watering schedule management
+        const scheduleList = document.getElementById('schedule-list');
+        const scheduleEmpty = document.getElementById('schedule-empty');
+        const scheduleStorageKey = 'smartTreeWateringSchedule';
+        let schedules = JSON.parse(localStorage.getItem(scheduleStorageKey) || 'null') || [];
+
+        function saveSchedules() {
+            localStorage.setItem(scheduleStorageKey, JSON.stringify(schedules));
+        }
+
+        function renderSchedules() {
+            scheduleList.innerHTML = '';
+            scheduleEmpty.classList.toggle('hidden', schedules.length > 0);
+            schedules.forEach((schedule) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100 dark:border-gray-800/50';
+                row.innerHTML = `
+                    <td class="py-3 dark:text-gray-300 font-semibold">${schedule.time}</td>
+                    <td class="py-3 dark:text-gray-300">${schedule.task}</td>
+                    <td class="py-3 dark:text-gray-300">${schedule.zone}</td>
+                    <td class="py-3"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${schedule.status === 'เสร็จแล้ว' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}">${schedule.status}</span></td>
+                    <td class="py-3 text-right whitespace-nowrap">
+                        ${schedule.status !== 'เสร็จแล้ว' ? `<button type="button" data-action="done" data-id="${schedule.id}" class="text-green-600 hover:underline mr-3">เสร็จแล้ว</button>` : '<span class="text-gray-400 mr-3">เสร็จแล้ว</span>'}
+                        <button type="button" data-action="edit" data-id="${schedule.id}" class="text-primary hover:underline mr-3">แก้ไข</button>
+                        <button type="button" data-action="delete" data-id="${schedule.id}" class="text-red-500 hover:underline">ลบ</button>
+                    </td>
+                `;
+                scheduleList.appendChild(row);
+            });
+        }
+
+        function editSchedule(id) {
+            const schedule = schedules.find((item) => item.id === id);
+            if (!schedule) return;
+            const time = prompt('เวลา (เช่น 06:30)', schedule.time);
+            if (time === null) return;
+            const task = prompt('ชื่องาน', schedule.task);
+            if (task === null) return;
+            const zone = prompt('โซน', schedule.zone);
+            if (zone === null) return;
+            if (!time.trim() || !task.trim() || !zone.trim()) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            Object.assign(schedule, { time: time.trim(), task: task.trim(), zone: zone.trim() });
+            saveSchedules();
+            renderSchedules();
+        }
+
+        document.getElementById('add-schedule').addEventListener('click', () => {
+            const time = prompt('เวลา (เช่น 06:30)', '07:00');
+            if (time === null) return;
+            const task = prompt('ชื่องาน', 'รดน้ำต้นไม้');
+            if (task === null) return;
+            const zone = prompt('โซน', 'โซน A');
+            if (zone === null) return;
+            if (!time.trim() || !task.trim() || !zone.trim()) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+            schedules.push({ id: Date.now(), time: time.trim(), task: task.trim(), zone: zone.trim(), status: 'รอทำงาน' });
+            saveSchedules();
+            renderSchedules();
+        });
+
+        scheduleList.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            const id = Number(button.dataset.id);
+            if (button.dataset.action === 'done') {
+                const schedule = schedules.find((item) => item.id === id);
+                if (!schedule) return;
+                schedule.status = 'เสร็จแล้ว';
+                saveSchedules();
+                renderSchedules();
+            } else if (button.dataset.action === 'edit') {
+                editSchedule(id);
+            } else if (button.dataset.action === 'delete' && confirm('ต้องการลบงานนี้หรือไม่?')) {
+                schedules = schedules.filter((schedule) => schedule.id !== id);
+                saveSchedules();
+                renderSchedules();
+            }
+        });
+
+        renderSchedules();
+
+        // ==========================================
+        // 3. Data Handling Logic
+        // ==========================================
+        
+        function updateUI(data) {
+            if(!data) return;
+
+            // Update basic numbers
+            els.temp.innerText = data.temperature !== undefined ? data.temperature.toFixed(1) : '--';
+            els.hum.innerText = data.humidity !== undefined ? data.humidity.toFixed(1) : '--';
+            els.soil.innerText = data.soil_moisture !== undefined ? data.soil_moisture : '--';
+            els.gas.innerText = data.gas_level !== undefined ? data.gas_level : '--';
+
+            // Update Status Badge
+            const status = data.status || "UNKNOWN";
+            els.statusBadge.innerText = status;
+            els.statusBadge.className = `px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider shadow-sm transition-colors duration-300 `;
+            
+            if (status === "SAFE") els.statusBadge.classList.add("status-safe");
+            else if (status === "WARNING") els.statusBadge.classList.add("status-warning");
+            else if (status === "DANGER") els.statusBadge.classList.add("status-danger");
+            else els.statusBadge.classList.add("bg-gray-200", "text-gray-600");
+
+            // Update Icons & Text for Day/Rain
+            if (data.is_daytime) {
+                els.daytime.innerText = "DAY";
+                els.iconDaytime.innerHTML = "☀️";
+                els.iconDaytime.className = "w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mr-3";
+            } else {
+                els.daytime.innerText = "NIGHT";
+                els.iconDaytime.innerHTML = "🌙";
+                els.iconDaytime.className = "w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-3";
+            }
+
+            if (data.is_raining) {
+                els.rain.innerText = "RAINING";
+                els.rain.classList.add("text-blue-500");
+                els.iconRain.innerHTML = "🌧️";
+                els.iconRain.className = "w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 animate-bounce";
+            } else {
+                els.rain.innerText = "CLEAR";
+                els.rain.classList.remove("text-blue-500");
+                els.iconRain.innerHTML = "🌤️";
+                els.iconRain.className = "w-10 h-10 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300 flex items-center justify-center mr-3";
+            }
+
+            // Add to Log
+            addToLog(data);
+        }
+
+        function addToLog(data) {
+            if(els.placeholder) {
+                els.placeholder.remove();
+            }
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            
+            let statusColor = "text-green-500";
+            if (data.status === "WARNING") statusColor = "text-amber-500";
+            if (data.status === "DANGER") statusColor = "text-red-500";
+
+            const row = document.createElement('tr');
+            row.className = "border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors";
+            row.innerHTML = `
+                <td class="py-3 dark:text-gray-300">${timeStr}</td>
+                <td class="py-3 dark:text-gray-300 font-medium">${data.temperature?.toFixed(1)}°C / ${data.humidity?.toFixed(1)}%</td>
+                <td class="py-3 dark:text-gray-300">${data.soil_moisture}%</td>
+                <td class="py-3 dark:text-gray-300">${data.gas_level} ppm</td>
+                <td class="py-3 text-right font-semibold ${statusColor}">${data.status}</td>
+            `;
+
+            els.log.prepend(row);
+
+            // Keep log short
+            if(els.log.children.length > 6) {
+                els.log.lastElementChild.remove();
+            }
+        }
+
+        // ==========================================
+        // 4. Firebase Realtime Listener
+        // ==========================================
+        onValue(dataRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                updateUI(data);
+            }
+        }, (error) => {
+            console.error("Firebase read error:", error);
+            els.statusBadge.innerText = "DB ERROR";
+            els.statusBadge.classList.add("bg-gray-200", "text-red-500");
+        });
+
+
+        // ==========================================
+        // 5. Utility: Theme Toggle & Greeting
+        // ==========================================
+        const themeBtn = document.getElementById('themeToggleBtn');
+        themeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+        });
+
+        // Set Greeting based on local time
+        const hour = new Date().getHours();
+        let greetingStr = "Good evening";
+        if (hour < 12) greetingStr = "Good morning";
+        else if (hour < 18) greetingStr = "Good afternoon";
+        document.getElementById('greeting').innerText = greetingStr;
+
+    </script>
+</body>
+</html>
